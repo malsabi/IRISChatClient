@@ -91,10 +91,6 @@ namespace IRISChatClient.Views.Scenarios
             //Unloaded += ProfilePageUnloaded;
             //RootPage = MasterPage.Current;
             //profileViewModel.LoadProfile(RootPage.UserProfile);
-            profileViewModel.OnSignOutUserResult += SetOnSignOutUserResult;
-            profileViewModel.OnUpdateUserProfileResult += SetOnUpdateUserProfileResult;
-            profileViewModel.OnDeleteUserAccountResult += SetOnDeleteUserAccountResult;
-            HandleMessage.Register(profileViewModel);
         }
         #endregion
     }

@@ -7,7 +7,7 @@ using System;
 
 namespace IRISChatClient.ViewModels
 {
-    public class RegisterViewModel : ObservableObject, IMessageCommand
+    public class RegisterViewModel : ObservableObject
     {
         #region "Fields"
         private string firstName;
@@ -144,19 +144,19 @@ namespace IRISChatClient.ViewModels
         #endregion
 
         #region "Events / Handlers"
-        public delegate void OnRegisterUserResultEvent(string Message, bool IsOperationSuccess);
-        public event OnRegisterUserResultEvent OnRegisterUserResult;
-        private void SetOnRegisterUserResult(string Message, bool IsOperationSuccess)
-        {
-            OnRegisterUserResult?.Invoke(Message, IsOperationSuccess);
-        }
+        //public delegate void OnRegisterUserResultEvent(string Message, bool IsOperationSuccess);
+        //public event OnRegisterUserResultEvent OnRegisterUserResult;
+        //private void SetOnRegisterUserResult(string Message, bool IsOperationSuccess)
+        //{
+        //    OnRegisterUserResult?.Invoke(Message, IsOperationSuccess);
+        //}
 
-        public delegate void OnBackToLoginButtonClickedEvent();
-        public event OnBackToLoginButtonClickedEvent OnBackToLoginButtonClicked;
-        private void SetOnBackToLoginButtonClicked()
-        {
-            OnBackToLoginButtonClicked?.Invoke();
-        }
+        //public delegate void OnBackToLoginButtonClickedEvent();
+        //public event OnBackToLoginButtonClickedEvent OnBackToLoginButtonClicked;
+        //private void SetOnBackToLoginButtonClicked()
+        //{
+        //    OnBackToLoginButtonClicked?.Invoke();
+        //}
         #endregion
 
         #region "Constructors"
@@ -173,43 +173,43 @@ namespace IRISChatClient.ViewModels
         #endregion
 
         #region "Interface Methods"
-        public bool CanExecute(IMessage Message)
-        {
-            if (Message.GetType().Equals(typeof(RegisterUserResultMessage)))
-            {
-                return true;
-            }
-            return false;
-        }
-        public bool CanExecuteFrom(object Sender)
-        {
-            return true;
-        }
-        public void Execute(object Sender, IMessage Message)
-        {
-            RegisterUserResultMessage RegisterUserResult = (RegisterUserResultMessage)Message;
-            SetOnRegisterUserResult(RegisterUserResult.ResultMessage, RegisterUserResult.IsResultSuccess);
-        }
+        //public bool CanExecute(IMessage Message)
+        //{
+        //    if (Message.GetType().Equals(typeof(RegisterUserResultMessage)))
+        //    {
+        //        return true;
+        //    }
+        //    return false;
+        //}
+        //public bool CanExecuteFrom(object Sender)
+        //{
+        //    return true;
+        //}
+        //public void Execute(object Sender, IMessage Message)
+        //{
+        //    RegisterUserResultMessage RegisterUserResult = (RegisterUserResultMessage)Message;
+        //    SetOnRegisterUserResult(RegisterUserResult.ResultMessage, RegisterUserResult.IsResultSuccess);
+        //}
         #endregion
 
         #region "Public Methods"
         public void BackToLoginButtonClick()
         {
-            SetOnBackToLoginButtonClicked();
+            //SetOnBackToLoginButtonClicked();
         }
         public void RegisterUserButtonClick()
         {
-            RegisterModel registerModel = new RegisterModel(FirstName, LastName, Username, Email, Password, ConfirmPassword, DateOfBirth.Date, Gender);
-            ValidationResult validationResult = RegisterValidator.Invalidate(registerModel);
-            if (validationResult.IsOperationSuccess)
-            {
-                RegisterUserMessage RegisterUser = new RegisterUserMessage(FirstName, LastName, Username, Email, Password, DateOfBirth.ToString(), Gender);
-                App.GetClientInstance.SendMessage(new MessageWrapper(RegisterUser.GetType().Name, RegisterUser));
-            }
-            else
-            {
-                SetOnRegisterUserResult(validationResult.Message, false);
-            }
+            //RegisterModel registerModel = new RegisterModel(FirstName, LastName, Username, Email, Password, ConfirmPassword, DateOfBirth.Date, Gender);
+            //ValidationResult validationResult = RegisterValidator.Invalidate(registerModel);
+            //if (validationResult.IsOperationSuccess)
+            //{
+            //    RegisterUserMessage RegisterUser = new RegisterUserMessage(FirstName, LastName, Username, Email, Password, DateOfBirth.ToString(), Gender);
+            //    App.GetClientInstance.SendMessage(new MessageWrapper(RegisterUser.GetType().Name, RegisterUser));
+            //}
+            //else
+            //{
+            //    SetOnRegisterUserResult(validationResult.Message, false);
+            //}
         }
         #endregion
     }
