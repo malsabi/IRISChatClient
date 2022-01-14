@@ -44,28 +44,14 @@ namespace IRISChatClient.Models
         {
             TempScenarios = new List<ScenarioModel>()
             {
-                new ScenarioModel() { Title = "Login", ClassType = typeof(LoginPage) },
-                new ScenarioModel() { Title = "Profile", ClassType = typeof(ProfilePage) },
-                new ScenarioModel() { Title = "Friends List", ClassType = typeof(FriendsListPage) }
+                new ScenarioModel() { Title = "General", ClassType = typeof(SignInPage) },
+                new ScenarioModel() { Title = "Friends List", ClassType = typeof(FriendsListPage) },
+                new ScenarioModel() { Title = "Global Chat", ClassType = typeof(FriendsListPage) }
             };
-        }
-        #endregion
-
-        #region "Public Methods"
-        public void AddSignedOutItems()
-        {
-            ClearItems();
-            Add(new ScenarioModel() { Title = string.Format("1) {0}", TempScenarios[0]), ClassType = TempScenarios[0].ClassType });
-            SetOnAddSignedInItems();
-        }
-        public void AddSignedInItems()
-        {
-            ClearItems();
-            for (int i = 1; i < TempScenarios.Count; i++)
+            foreach (ScenarioModel Scene in TempScenarios)
             {
-                Add(new ScenarioModel() { Title = string.Format("{0}) {1}", i, TempScenarios[i]), ClassType = TempScenarios[i].ClassType });
+                Add(Scene);
             }
-            SetOnAddSignedOutItems();
         }
         #endregion
     }

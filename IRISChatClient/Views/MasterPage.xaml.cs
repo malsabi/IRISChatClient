@@ -3,12 +3,9 @@ using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
-using Microsoft.Extensions.DependencyInjection;
 using IRISChatClient.Configs;
 using IRISChatClient.Enums;
 using IRISChatClient.Models;
-using IRISChatClient.ViewModels;
-using IRISChatClient.Views.Scenarios;
 using IRISChatClient.Interfaces;
 
 namespace IRISChatClient.Views
@@ -16,20 +13,7 @@ namespace IRISChatClient.Views
     public sealed partial class MasterPage : Page
     {
         #region "Fields"
-        private DispatcherTimer DispatcherTimer;
-        #endregion
-
-        #region "Properties"
-        /// <summary>
-        /// Returns the instance of the masterViewMode.
-        /// </summary>
-        public MasterViewModel GetMasterViewModel
-        {
-            get
-            {
-                return masterViewModel;
-            }
-        }
+        private DispatcherTimer notificationTimer;
         #endregion
 
         #region "Constructors"
@@ -41,16 +25,6 @@ namespace IRISChatClient.Views
         #endregion
 
         #region "Handlers"
-        private void DispatcherTimerTick(object sender, object e)
-        {
-            NotificationBorder.Visibility = Visibility.Collapsed;
-            NotificationPanel.Visibility = Visibility.Collapsed;
-            DispatcherTimer.Stop();
-        }
-        private void ToggleButtonClick(object sender, RoutedEventArgs e)
-        {
-            Splitter.IsPaneOpen = !Splitter.IsPaneOpen;
-        }
         private void ScenarioControlSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ListBox scenarioListBox = sender as ListBox;
@@ -59,32 +33,36 @@ namespace IRISChatClient.Views
                 ScenarioFrame.Navigate(s.ClassType);
             }
         }
-        private void MasterViewModelOnNotification(string Message, NotificationType Type)
+        private void ToggleButtonClick(object sender, RoutedEventArgs e)
+        {
+            Splitter.IsPaneOpen = !Splitter.IsPaneOpen;
+        }
+        private void NotificationTimerHandler(object sender, object e)
+        {
+            NotificationBorder.Visibility = Visibility.Collapsed;
+            NotificationPanel.Visibility = Visibility.Collapsed;
+            notificationTimer.Stop();
+        }
+        private void OnNotificationHandler(string Message, NotificationType Type)
         {
             NotifyUser(Message, Type);
         }
         #endregion
 
-        #region "Private Methods"
+        #region "Initialization"
         private void Initialize()
         {
-            DispatcherTimer = new DispatcherTimer();
-            DispatcherTimer.Tick += new EventHandler<object>(DispatcherTimerTick);
-            DispatcherTimer.Interval = new TimeSpan(0, 0, Constants.MAXIMUM_SHOW_SECONDS);
-            masterViewModel.OnNotification += MasterViewModelOnNotification;
-            ConfigureNavigationService();
+            App.GetService<INavigationService>().SetCurrentFrame(ScenarioFrame);
+            notificationTimer = new DispatcherTimer
+            {
+                Interval = new TimeSpan(0, 0, Constants.MAXIMUM_SHOW_SECONDS)
+            };
+            notificationTimer.Tick += NotificationTimerHandler;
+            masterViewModel.OnNotification += OnNotificationHandler;
         }
+        #endregion
 
-        private void ConfigureNavigationService()
-        {
-            INavigationService navigationService = App.Current.Services.GetService<INavigationService>();
-            navigationService.RegisterView(typeof(MasterViewModel),   typeof(MasterPage));
-            navigationService.RegisterView(typeof(LoginViewModel),    typeof(LoginPage));
-            navigationService.RegisterView(typeof(ProfileViewModel),  typeof(ProfilePage));
-            navigationService.RegisterView(typeof(RegisterViewModel), typeof(RegisterPage));
-            navigationService.RegisterView(typeof(RecoverViewModel),  typeof(RecoverPage));
-            navigationService.SetCurrentFrame(ScenarioFrame);
-        }
+        #region "Notification"
         private async void NotifyUser(string Message, NotificationType Type)
         {
             if (Dispatcher.HasThreadAccess == false)
@@ -93,6 +71,11 @@ namespace IRISChatClient.Views
             }
             else
             {
+                if (notificationTimer.IsEnabled)
+                {
+                    notificationTimer.Stop();
+                }
+                notificationTimer.Start();
                 switch (Type)
                 {
                     case NotificationType.InfoMessage:
@@ -124,11 +107,6 @@ namespace IRISChatClient.Views
                     NotificationBorder.Visibility = Visibility.Collapsed;
                     NotificationPanel.Visibility = Visibility.Collapsed;
                 }
-                if (DispatcherTimer.IsEnabled)
-                {
-                    DispatcherTimer.Stop();
-                }
-                DispatcherTimer.Start();
             }
         }
         #endregion

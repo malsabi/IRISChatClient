@@ -1,215 +1,100 @@
-﻿using IRISChatClient.Interfaces;
-using IRISChatClient.Models;
-using IRISChatClient.Networking.Messages;
-using IRISChatClient.Validations;
+﻿using System.Threading.Tasks;
+using Microsoft.Toolkit.Mvvm.Input;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
-using System;
+using IRISChatClient.Interfaces;
+using IRISChatClient.Messages;
+using IRISChatClient.Enums;
+using IRISChatClient.Configs;
+using IRISChatClient.Models;
 
 namespace IRISChatClient.ViewModels
 {
-    public class RegisterViewModel : ObservableObject
+    public class RegisterViewModel : ObservableRecipient
     {
-        #region "Fields"
-        private string firstName;
-        private string lastName;
-        private string email;
-        private string username;
-        private string password;
-        private string confirmPassword;
-        private string gender;
-        private bool maleRadioButtonChecked;
-        private bool femaleRadioButtonChecked;
-        private DateTimeOffset dateOfBirth;
-        #endregion
+        #region "Properties"
+        public IRelayCommand NavigateLoginCommand { get; private set; }
 
-        #region "Bindable Properties"
-        public string FirstName
-        {
-            get
-            {
-                return firstName;
-            }
-            set
-            {
-                SetProperty(ref firstName, value);
-            }
-        }
-        public string LastName 
-        {
-            get
-            {
-                return lastName;
-            }
-            set
-            {
-                SetProperty(ref lastName, value);
-            }
-        }
-        public string Email
-        {
-            get
-            {
-                return email;
-            }
-            set
-            {
-                SetProperty(ref email, value);
-            }
-        }
-        public string Username 
-        {
-            get
-            {
-                return username;
-            }
-            set
-            {
-                SetProperty(ref username, value);
-            }
-        }
-        public string Password
-        {
-            get
-            {
-                return password;
-            }
-            set
-            {
-                SetProperty(ref password, value);
-            }
-        }
-        public string ConfirmPassword
-        {
-            get
-            {
-                return confirmPassword;
-            }
-            set
-            {
-                SetProperty(ref confirmPassword, value);
-            }
-        }
-        public string Gender 
-        {
-            get
-            {
-                return gender;
-            }
-            set
-            {
-                SetProperty(ref gender, value);
-            }
-        }
-        public DateTimeOffset DateOfBirth 
-        {
-            get
-            {
-                return dateOfBirth;
-            }
-            set
-            {
-                SetProperty(ref dateOfBirth, value);
-            }
-        }
-        public bool MaleRadioButtonChecked
-        {
-            get
-            {
-                return maleRadioButtonChecked;
-            }
-            set
-            {
-                if (value)
-                {
-                    Gender = "Male";
-                }
-                SetProperty(ref maleRadioButtonChecked, value);
-            }
-        }
-        public bool FemaleRadioButtonChecked 
-        {
-            get
-            {
-                return femaleRadioButtonChecked;
-            }
-            set
-            {
-                if (value)
-                {
-                    Gender = "Female";
-                }
-                SetProperty(ref femaleRadioButtonChecked, value);
-            }
-        }
-        #endregion
+        public IAsyncRelayCommand RegisterUserCommand { get; private set; }
 
-        #region "Events / Handlers"
-        //public delegate void OnRegisterUserResultEvent(string Message, bool IsOperationSuccess);
-        //public event OnRegisterUserResultEvent OnRegisterUserResult;
-        //private void SetOnRegisterUserResult(string Message, bool IsOperationSuccess)
-        //{
-        //    OnRegisterUserResult?.Invoke(Message, IsOperationSuccess);
-        //}
+        public INavigationService Navigator { get; private set; }
 
-        //public delegate void OnBackToLoginButtonClickedEvent();
-        //public event OnBackToLoginButtonClickedEvent OnBackToLoginButtonClicked;
-        //private void SetOnBackToLoginButtonClicked()
-        //{
-        //    OnBackToLoginButtonClicked?.Invoke();
-        //}
+        public IUserSessionService UserSession { get; private set; }
+
+        public RegisterModel UserRegister { get; private set; }
         #endregion
 
         #region "Constructors"
         public RegisterViewModel()
         {
-            FirstName = "";
-            LastName = "";
-            Email = "";
-            Username = "";
-            Password = "";
-            ConfirmPassword = "";
-            Gender = "";
+            Initialize();
         }
         #endregion
 
-        #region "Interface Methods"
-        //public bool CanExecute(IMessage Message)
-        //{
-        //    if (Message.GetType().Equals(typeof(RegisterUserResultMessage)))
-        //    {
-        //        return true;
-        //    }
-        //    return false;
-        //}
-        //public bool CanExecuteFrom(object Sender)
-        //{
-        //    return true;
-        //}
-        //public void Execute(object Sender, IMessage Message)
-        //{
-        //    RegisterUserResultMessage RegisterUserResult = (RegisterUserResultMessage)Message;
-        //    SetOnRegisterUserResult(RegisterUserResult.ResultMessage, RegisterUserResult.IsResultSuccess);
-        //}
+        #region "Initialization"
+        private void Initialize()
+        {
+            IsActive = true;
+            UserRegister = new RegisterModel();
+            NavigateLoginCommand = new RelayCommand(NavigateLoginPage);
+            RegisterUserCommand = new AsyncRelayCommand(RegisterUser, CanRegisterUser);
+            Navigator = App.GetService<INavigationService>();
+            UserSession = App.GetService<IUserSessionService>();
+        }
         #endregion
 
-        #region "Public Methods"
-        public void BackToLoginButtonClick()
+        #region "Messenger"
+        protected override void OnActivated()
         {
-            //SetOnBackToLoginButtonClicked();
+            Messenger.Register<ClientStateMessage>(this, (r, m) =>
+            {
+                RegisterUserCommand.NotifyCanExecuteChanged();
+            });
         }
-        public void RegisterUserButtonClick()
+
+        protected override void OnDeactivated()
         {
-            //RegisterModel registerModel = new RegisterModel(FirstName, LastName, Username, Email, Password, ConfirmPassword, DateOfBirth.Date, Gender);
-            //ValidationResult validationResult = RegisterValidator.Invalidate(registerModel);
-            //if (validationResult.IsOperationSuccess)
-            //{
-            //    RegisterUserMessage RegisterUser = new RegisterUserMessage(FirstName, LastName, Username, Email, Password, DateOfBirth.ToString(), Gender);
-            //    App.GetClientInstance.SendMessage(new MessageWrapper(RegisterUser.GetType().Name, RegisterUser));
-            //}
-            //else
-            //{
-            //    SetOnRegisterUserResult(validationResult.Message, false);
-            //}
+            Messenger.Unregister<ClientStateMessage>(this);
+        }
+
+        private void SetNotification(string Message, NotificationType Type)
+        {
+            Messenger.Send(new NotificationMessage(Message, Type));
+        }
+        #endregion
+
+        #region "User Session"
+        private void NavigateLoginPage()
+        {
+            if (Navigator.CanGoBack)
+            {
+                Navigator.GoBack();
+            }
+            else
+            {
+                Navigator.Navigate<SignInViewModel>();
+            }
+        }
+
+        private async Task RegisterUser()
+        {
+            SetNotification(Constants.ATTEMPT_REGISTER_MESSAGE, NotificationType.InfoMessage);
+
+            ISessionResult SessionResult = await UserSession.Register(UserRegister);
+            if (SessionResult.IsSuccess)
+            {
+                SetNotification(SessionResult.Message, NotificationType.SuccessMessage);
+                NavigateLoginPage();
+            }
+            else
+            {
+                SetNotification(SessionResult.Message, NotificationType.ErrorMessage);
+            }
+        }
+
+        private bool CanRegisterUser()
+        {
+            return !UserSession.IsSignedIn && UserSession.Client.IsConnected;
         }
         #endregion
     }

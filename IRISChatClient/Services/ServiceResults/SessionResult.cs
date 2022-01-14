@@ -5,9 +5,9 @@ namespace IRISChatClient.Services.ServiceResults
     public class SessionResult : ISessionResult
     {
         #region "Properties"
-        public string Message { get; private set; }
+        public string Message { get; set; }
 
-        public bool IsSuccess { get; private set; }
+        public bool IsSuccess { get; set; }
         #endregion
 
         #region "Constructors"

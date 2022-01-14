@@ -1,4 +1,5 @@
-﻿using IRISChatClient.Interfaces;
+﻿using IRISChatClient.Models;
+using IRISChatClient.Interfaces;
 
 namespace IRISChatClient.Networking.Messages
 {
@@ -13,14 +14,20 @@ namespace IRISChatClient.Networking.Messages
         #region "Constructors"
         public SignInUserMessage()
         {
-            Username = "";
-            Password = "";
         }
+
         public SignInUserMessage(string Username, string Password, bool IsStaySignedIn)
         {
             this.Username = Username;
             this.Password = Password;
             this.IsStaySignedIn = IsStaySignedIn;
+        }
+
+        public SignInUserMessage(SignInModel UserSignInInformation)
+        {
+            Username = UserSignInInformation.Username;
+            Password = UserSignInInformation.Password;
+            IsStaySignedIn = UserSignInInformation.IsStaySignedIn;
         }
         #endregion
     }

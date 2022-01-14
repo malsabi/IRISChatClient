@@ -1,204 +1,144 @@
-﻿using System;
-using IRISChatClient.Interfaces;
-using IRISChatClient.Models;
+﻿using System.ComponentModel;
+using System.Threading.Tasks;
+using Microsoft.Toolkit.Mvvm.Input;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
+using IRISChatClient.Enums;
+using IRISChatClient.Models;
+using IRISChatClient.Configs;
+using IRISChatClient.Messages;
+using IRISChatClient.Interfaces;
 
 namespace IRISChatClient.ViewModels
 {
-    public class ProfileViewModel : ObservableObject
+    public class ProfileViewModel : ObservableRecipient
     {
-        #region "Fields"
-        private string firstName;
-        private string lastName;
-        private string email;
-        private string username;
-        private DateTimeOffset dateOfBirth;
-        #endregion
-
         #region "Properties"
-        public ProfileModel UserProfile { get; set; }
-        public string FirstName
-        {
-            get
-            {
-                return firstName;
-            }
-            set
-            {
-                SetProperty(ref firstName, value);
-            }
-        }
-        public string LastName
-        {
-            get
-            {
-                return lastName;
-            }
-            set
-            {
-                SetProperty(ref lastName, value);
-            }
-        }
-        public string Email
-        {
-            get
-            {
-                return email;
-            }
-            set
-            {
-                SetProperty(ref email, value);
-            }
-        }
-        public string Username
-        {
-            get
-            {
-                return username;
-            }
-            set
-            {
-                SetProperty(ref username, value);
-            }
-        }
-        public DateTimeOffset DateOfBirth
-        {
-            get
-            {
-                return dateOfBirth;
-            }
-            set
-            {
-                SetProperty(ref dateOfBirth, value);
-            }
-        }
+        public IAsyncRelayCommand SaveChangesCommand { get; private set; }
+
+        public IAsyncRelayCommand SignOutCommand { get; private set; }
+
+        public IAsyncRelayCommand DeleteAccountCommand { get; private set; }
+
+        public INavigationService Navigator { get; private set; }
+
+        public IUserSessionService UserSession { get; private set; }
+
+        public ProfileModel UserProfile { get; private set; }
         #endregion
 
+        #region "PropertyChanged Handler"
+        private void OnPropertyChangingHandler(object sender, PropertyChangedEventArgs e)
+        {
+            UserProfile.IsUpdated = UserProfile.IsEqual(UserSession.UserProfile);
+            SaveChangesCommand.NotifyCanExecuteChanged();
+        }
+        #endregion
 
         #region "Constructors"
         public ProfileViewModel()
         {
-            FirstName = "";
-            LastName = "";
-            Email = "";
-            Username = "";
-            DateOfBirth = DateTime.Now;
+            Initialize();
         }
         #endregion
 
-        #region "Interface Methods"
-        //public bool CanExecute(IMessage Message)
-        //{
-        //    if (Message.GetType().Equals(typeof(SignOutUserResultMessage)))
-        //    {
-        //        return true;
-        //    }
-        //    else if (Message.GetType().Equals(typeof(UpdateUserProfileResultMessage)))
-        //    {
-        //        return true;
-        //    }
-        //    else if (Message.GetType().Equals(typeof(DeleteUserAccountResultMessage)))
-        //    {
-        //        return true;
-        //    }
-        //    return false;
-        //}
-        //public bool CanExecuteFrom(object Sender)
-        //{
-        //    return true;
-        //}
-        //public void Execute(object Sender, IMessage Message)
-        //{
-        //    if (Message.GetType().Equals(typeof(SignOutUserResultMessage)))
-        //    {
-        //        SignOutUserResult((IRISClient)Sender, (SignOutUserResultMessage)Message);
-        //    }
-        //    else if (Message.GetType().Equals(typeof(UpdateUserProfileResultMessage)))
-        //    {
-        //        UpdateUserProfileResult((IRISClient)Sender, (UpdateUserProfileResultMessage)Message);
-        //    }
-        //    else if (Message.GetType().Equals(typeof(DeleteUserAccountResultMessage)))
-        //    {
-        //        DeleteUserAccountResult((IRISClient)Sender, (DeleteUserAccountResultMessage)Message);
-        //    }
-        //}
+        #region Initialization"
+        private void Initialize()
+        {
+            IsActive = true;
+            SaveChangesCommand = new AsyncRelayCommand(SaveChanges, CanSaveChanges);
+            SignOutCommand = new AsyncRelayCommand(SignOut, CanSignOutOrDeleteAccount);
+            DeleteAccountCommand = new AsyncRelayCommand(DeleteAccount, CanSignOutOrDeleteAccount);
+            Navigator = App.GetService<INavigationService>();
+            UserSession = App.GetService<IUserSessionService>();
+            UserProfile = new ProfileModel(UserSession?.UserProfile);
+            UserProfile.PropertyChanged += OnPropertyChangingHandler;
+        }
         #endregion
 
-        #region "Private Methods"
-        //private void SignOutUserResult(IRISClient Client, SignOutUserResultMessage Message)
-        //{
-        //    SetOnSignOutUserResult(Message.ResultMessage, Message.IsResultSuccess);
-        //}
-        //private void UpdateUserProfileResult(IRISClient Client, UpdateUserProfileResultMessage Message)
-        //{
-        //    SetOnUpdateUserProfileResult(Message.UpdatedUserProfile, Message.ResultMessage, Message.IsResultSuccess);
-        //}
-        //private void DeleteUserAccountResult(IRISClient Client, DeleteUserAccountResultMessage Message)
-        //{
-        //    SetOnDeleteUserAccountResult(Message.ResultMessage, Message.IsResultSuccess);
-        //}
+        #region "Messenger"
+        protected override void OnActivated()
+        {
+            Messenger.Register<ClientStateMessage>(this, (r, m) =>
+            {
+                SignOutCommand.NotifyCanExecuteChanged();
+                SaveChangesCommand.NotifyCanExecuteChanged();
+                DeleteAccountCommand.NotifyCanExecuteChanged();
+            });
+        }
+
+        protected override void OnDeactivated()
+        {
+            Messenger.Unregister<ClientStateMessage>(this);
+        }
+
+        private void SetNotification(string Message, NotificationType Type)
+        {
+            Messenger.Send(new NotificationMessage(Message, Type));
+        }
         #endregion
 
-        #region "Public Methods"
-        public void LoadProfile(ProfileModel UserProfile)
+        #region "User Session"
+        private async Task SaveChanges()
         {
-            //this.UserProfile = UserProfile;
-            //if (UserProfile != null)
-            //{
-            //    FirstName = UserProfile.FirstName;
-            //    LastName = UserProfile.LastName;
-            //    Email = UserProfile.Email;
-            //    Username = UserProfile.Username;
-            //    DateOfBirth = UserProfile.DateOfBirth;
-            //}
-        }
-        public void SignOutButtonClick()
-        {
-            //SignOutUserMessage SignOutUser = new SignOutUserMessage(UserProfile.Username);
-            //App.GetClientInstance.SendMessage(new MessageWrapper(typeof(SignOutUserMessage).Name, SignOutUser));
-            //SetOnSignOutButtonClicked();
-        }
-        public async void SaveChangesButtonClick()
-        {
-            //ProfileModel CurrentProfile = new ProfileModel(FirstName, LastName, Email, Username, DateOfBirth.Date);
+            SetNotification(Constants.ATTEMPT_UPDATE_MESSAGE, NotificationType.InfoMessage);
+            
+            ISessionResult SessionResult = await UserSession.UpdateProfile(UserSession.UserProfile.Username, UserProfile);
 
-            //if (CurrentProfile.IsEqual(UserProfile))
-            //{
-            //    ContentDialog DeleteConfirmationDialog = new ContentDialog
-            //    {
-            //        Title = "Save Changes",
-            //        Content = "You didn't make any changes",
-            //        PrimaryButtonText = "Ok",
-            //    };
-            //    await DeleteConfirmationDialog.ShowAsync();
-            //}
-            //else
-            //{
-            //    UpdateUserProfileMessage UpdateUserProfile = new UpdateUserProfileMessage
-            //    {
-            //        OldUsername = UserProfile.Username,
-            //        UpdatedUserProfile = new ProfileModel(FirstName, LastName, Email, Username, DateOfBirth.Date)
-            //    };
-            //    App.GetClientInstance.SendMessage(new MessageWrapper(typeof(UpdateUserProfileMessage).Name, UpdateUserProfile));
-            //}
-            //SetOnSaveChangesButtonClicked();
+            if (SessionResult.IsSuccess && UserSession.IsSignedIn)
+            {
+                SetNotification(SessionResult.Message, NotificationType.SuccessMessage);
+                UserProfile.IsUpdated = true;
+                SaveChangesCommand.NotifyCanExecuteChanged();
+            }
+            else
+            {
+                SetNotification(SessionResult.Message, NotificationType.ErrorMessage);
+            }
         }
-        public async void DeleteAccountButtonClickAsync()
+
+        private bool CanSaveChanges()
         {
-            //ContentDialog DeleteConfirmationDialog = new ContentDialog
-            //{
-            //    Title = "Account Termination",
-            //    Content = "Are you sure you want to delete your account ?",
-            //    PrimaryButtonText = "Yes",
-            //    CloseButtonText = "Cancel"
-            //};
-            //ContentDialogResult Result = await DeleteConfirmationDialog.ShowAsync();
-            //if (Result == ContentDialogResult.Primary)
-            //{
-            //    DeleteUserAccountMessage DeleteUserAccount = new DeleteUserAccountMessage(Username);
-            //    App.GetClientInstance.SendMessage(new MessageWrapper(typeof(DeleteUserAccountMessage).Name, DeleteUserAccount));
-            //}
-            //SetOnDeleteAccountButtonClicked();
+            return UserProfile.IsUpdated == false && UserSession.Client.IsConnected;
+        }
+
+        private async Task SignOut()
+        {
+            SetNotification(Constants.ATTEMPT_SIGNOUT_MESSAGE, NotificationType.InfoMessage);
+
+            ISessionResult SessionResult = await UserSession.SignOut();
+
+            if (SessionResult.IsSuccess)
+            {
+                SetNotification(SessionResult.Message, NotificationType.SuccessMessage);
+                Navigator.Navigate<SignInViewModel>();
+            }
+            else
+            {
+                SetNotification(SessionResult.Message, NotificationType.ErrorMessage);
+            }
+        }
+
+        private async Task DeleteAccount()
+        {
+            SetNotification(Constants.ATTEMPT_DELETE_MESSAGE, NotificationType.InfoMessage);
+
+            ISessionResult SessionResult = await UserSession.DeleteAccount();
+
+            if (SessionResult.IsSuccess)
+            {
+                SetNotification(SessionResult.Message, NotificationType.SuccessMessage);
+                Navigator.Navigate<SignInViewModel>();
+            }
+            else
+            {
+                SetNotification(SessionResult.Message, NotificationType.ErrorMessage);
+            }
+        }
+
+        private bool CanSignOutOrDeleteAccount()
+        {
+            return UserSession.IsSignedIn && UserSession.Client.IsConnected;
         }
         #endregion
     }

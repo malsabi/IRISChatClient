@@ -119,13 +119,16 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Interfaces\IClientStateMessage.cs" />
+    <Compile Include="Interfaces\INotificationMessage.cs" />
+    <Compile Include="Interfaces\IClientService.cs" />
     <Compile Include="Interfaces\IMessage.cs" />
-    <Compile Include="Interfaces\IMessageCommand.cs" />
     <Compile Include="Interfaces\INavigationService.cs" />
+    <Compile Include="Interfaces\IResponse.cs" />
     <Compile Include="Interfaces\ISessionResult.cs" />
     <Compile Include="Interfaces\IUserSessionService.cs" />
+    <Compile Include="Messages\ClientStateMessage.cs" />
     <Compile Include="Messages\NotificationMessage.cs" />
-    <Compile Include="Networking\MessageManagement\HandleMessage.cs" />
     <Compile Include="Networking\Messages\DeleteUserAccountMessage.cs" />
     <Compile Include="Networking\Messages\DeleteUserAccountResultMessage.cs" />
     <Compile Include="Networking\Messages\MessageWrapper.cs" />
@@ -134,7 +137,6 @@
     <Compile Include="Networking\Messages\RecoverUserPasswordResultMessage.cs" />
     <Compile Include="Networking\Messages\RegisterUserMessage.cs" />
     <Compile Include="Configs\Constants.cs" />
-    <Compile Include="Converters\BoolToGenderConverter.cs" />
     <Compile Include="Enums\NotificationType.cs" />
     <Compile Include="Helpers\SocketHelper.cs" />
     <Compile Include="Helpers\ValidationHelper.cs" />
@@ -151,16 +153,19 @@
     <Compile Include="Networking\Messages\SignOutUserMessage.cs" />
     <Compile Include="Networking\Messages\UpdateUserProfileMessage.cs" />
     <Compile Include="Networking\Messages\UpdateUserProfileResultMessage.cs" />
+    <Compile Include="Networking\Response.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Models\LoginModel.cs" />
+    <Compile Include="Models\SignInModel.cs" />
+    <Compile Include="Services\ClientService.cs" />
     <Compile Include="Services\NavigationService.cs" />
     <Compile Include="Services\ServiceResults\SessionResult.cs" />
     <Compile Include="Services\UserSessionService.cs" />
-    <Compile Include="Validations\LoginValidator.cs" />
+    <Compile Include="Validations\SignInValidator.cs" />
     <Compile Include="Validations\RecoverValidator.cs" />
     <Compile Include="Validations\RegisterValidator.cs" />
+    <Compile Include="Validations\UpdateProfileValidator.cs" />
     <Compile Include="Validations\ValidationResult.cs" />
-    <Compile Include="ViewModels\LoginViewModel.cs" />
+    <Compile Include="ViewModels\SignInViewModel.cs" />
     <Compile Include="ViewModels\MasterViewModel.cs" />
     <Compile Include="ViewModels\ProfileViewModel.cs" />
     <Compile Include="ViewModels\RecoverViewModel.cs" />
@@ -168,8 +173,8 @@
     <Compile Include="Views\MasterPage.xaml.cs">
       <DependentUpon>MasterPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\Scenarios\LoginPage.xaml.cs">
-      <DependentUpon>LoginPage.xaml</DependentUpon>
+    <Compile Include="Views\Scenarios\SignInPage.xaml.cs">
+      <DependentUpon>SignInPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\Scenarios\FriendsListPage.xaml.cs">
       <DependentUpon>FriendsListPage.xaml</DependentUpon>
@@ -219,7 +224,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\Scenarios\LoginPage.xaml">
+    <Page Include="Views\Scenarios\SignInPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -263,9 +268,7 @@
       <Version>13.0.1</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Networking\MessageHandlers\" />
-  </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

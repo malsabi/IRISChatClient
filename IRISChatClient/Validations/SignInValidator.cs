@@ -5,9 +5,9 @@ using IRISChatClient.Models;
 
 namespace IRISChatClient.Validations
 {
-    public class LoginValidator
+    public class SignInValidator
     {
-        public static ValidationResult Invalidate(LoginModel loginModel)
+        public static ValidationResult Invalidate(SignInModel loginModel)
         {
             ValidationResult validationResult = new ValidationResult
             {

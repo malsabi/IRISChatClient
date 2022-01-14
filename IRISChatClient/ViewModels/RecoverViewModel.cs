@@ -1,8 +1,8 @@
 ﻿using IRISChatClient.Interfaces;
-using IRISChatClient.Models;
-using IRISChatClient.Networking.Messages;
-using IRISChatClient.Validations;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
+using Microsoft.Toolkit.Mvvm.Input;
+using System.Threading.Tasks;
 
 namespace IRISChatClient.ViewModels
 {
@@ -12,65 +12,59 @@ namespace IRISChatClient.ViewModels
         private string recoverUsername;
         #endregion
 
-        #region "Bindable Properties"
-        public string RecoverUsername
-        {
-            get
-            {
-                return recoverUsername;
-            }
-            set
-            {
-                SetProperty(ref recoverUsername, value);
-            }
-        }
+        #region "Properties"
+        public IRelayCommand NavigateLoginCommand { get; private set; }
+
+        public IAsyncRelayCommand RecoverUserCommand { get; private set; }
+
+        public INavigationService Navigator { get; private set; }
+
+        public IUserSessionService UserSession { get; private set; }
+
+        public string RecoverUsername { get { return recoverUsername; } set { SetProperty(ref recoverUsername, value); } }
         #endregion
 
         #region "Constructors"
         public RecoverViewModel()
         {
-            RecoverUsername = "";
+            Initialize();
         }
         #endregion
 
-        #region "Interface Methods"
-        //public bool CanExecute(IMessage Message)
-        //{
-        //    if (Message.GetType().Equals(typeof(RecoverUserPasswordResultMessage)))
-        //    {
-        //        return true;
-        //    }
-        //    return false;
-        //}
-        //public bool CanExecuteFrom(object Sender)
-        //{
-        //    return true;
-        //}
-        //public void Execute(object Sender, IMessage Message)
-        //{
-        //    RecoverUserPasswordResultMessage RecoverUserPasswordResult = (RecoverUserPasswordResultMessage)Message;
-        //    SetOnRecoverPasswordResult(RecoverUserPasswordResult.ResultMessage, RecoverUserPasswordResult.IsResultSuccess);
-        //}
+        #region "Initialization"
+        private void Initialize()
+        {
+            NavigateLoginCommand = new RelayCommand(NavigateLoginPage);
+            RecoverUserCommand = new AsyncRelayCommand(RecoverUser, CanRecoverUser);
+
+            if (App.Current != null && App.Current.Services != null)
+            {
+                Navigator = App.Current.Services.GetService<INavigationService>();
+                UserSession = App.Current.Services.GetService<IUserSessionService>();
+            }
+        }
         #endregion
 
-        #region "Public Methods"
-        public void RecoverPasswordButtonClick()
+        #region "User Session"
+        private void NavigateLoginPage()
         {
-            //RecoverModel recoverModel = new RecoverModel(RecoverUsername);
-            //ValidationResult validationResult = RecoverValidator.Invalidate(recoverModel);
-            //if (validationResult.IsOperationSuccess)
-            //{
-            //    RecoverUserPasswordMessage RecoverUserPassword = new RecoverUserPasswordMessage(RecoverUsername);
-            //    App.GetClientInstance.SendMessage(new MessageWrapper(RecoverUsername.GetType().Name, RecoverUserPassword));
-            //}
-            //else
-            //{
-            //    SetOnRecoverPasswordResult(validationResult.Message, false);
-            //}
+            if (Navigator.CanGoBack)
+            {
+                Navigator.GoBack();
+            }
+            else
+            {
+                Navigator.Navigate<SignInViewModel>();
+            }
         }
-        public void BackToLoginButtonClick()
+
+        private async Task RecoverUser()
         {
-            //SetOnBackToLoginButtonClicked();
+        }
+
+        private bool CanRecoverUser()
+        {
+            return true;
         }
         #endregion
     }

@@ -2,13 +2,11 @@
 
 namespace IRISChatClient.Views.Scenarios
 {
-    public sealed partial class LoginPage : Page
+    public sealed partial class SignInPage : Page
     {
-        #region "Constructors"
-        public LoginPage()
+        public SignInPage()
         {
             InitializeComponent();
         }
-        #endregion
     }
 }

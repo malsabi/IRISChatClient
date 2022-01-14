@@ -1,4 +1,5 @@
 ﻿using IRISChatClient.Interfaces;
+using IRISChatClient.Models;
 
 namespace IRISChatClient.Networking.Messages
 {
@@ -17,14 +18,8 @@ namespace IRISChatClient.Networking.Messages
         #region "Constructors"
         public RegisterUserMessage()
         {
-            FirstName = "";
-            LastName = "";
-            Username = "";
-            Email = "";
-            Password = "";
-            DateOfBirth = "";
-            Gender = "";
         }
+
         public RegisterUserMessage(string FirstName, string LastName, string Username, string Email, string Password, string DateOfBirth, string Gender)
         {
             this.FirstName = FirstName;
@@ -34,6 +29,17 @@ namespace IRISChatClient.Networking.Messages
             this.Password = Password;
             this.DateOfBirth = DateOfBirth;
             this.Gender = Gender;
+        }
+
+        public RegisterUserMessage(RegisterModel UserRegisterInformation)
+        {
+            FirstName = UserRegisterInformation.FirstName;
+            LastName = UserRegisterInformation.LastName;
+            Username = UserRegisterInformation.Username;
+            Email = UserRegisterInformation.Email;
+            Password = UserRegisterInformation.Password;
+            DateOfBirth = UserRegisterInformation.DateOfBirth.ToString();
+            Gender = UserRegisterInformation.Gender;
         }
         #endregion
     }

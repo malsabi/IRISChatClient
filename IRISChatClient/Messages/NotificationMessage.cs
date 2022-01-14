@@ -1,9 +1,9 @@
 ﻿using IRISChatClient.Enums;
-using Microsoft.Toolkit.Mvvm.Messaging.Messages;
+using IRISChatClient.Interfaces;
 
 namespace IRISChatClient.Messages
 {
-    public sealed class NotificationMessage : ValueChangedMessage<string>
+    public sealed class NotificationMessage : INotificationMessage
     {
         #region "Properties"
         public string Message { get; }
@@ -11,12 +11,13 @@ namespace IRISChatClient.Messages
         #endregion
 
         #region "Constructors"
-        public NotificationMessage() : base(string.Empty)
+        public NotificationMessage() 
         {
             Message = string.Empty;
             Type = NotificationType.None;
         }
-        public NotificationMessage(string Message, NotificationType Type) : base(Message)
+
+        public NotificationMessage(string Message, NotificationType Type)
         {
             this.Message = Message;
             this.Type = Type;

@@ -29,7 +29,7 @@
                             HorizontalAlignment="Left"
                             HorizontalContentAlignment="Left"
                             Margin="0, 0, 0, 0"
-                            Click="{x:Bind profileViewModel.SignOutButtonClick}">
+                            Command="{x:Bind profileViewModel.SignOutCommand}">
 
                         <StackPanel Orientation="Horizontal">
                             <Image Source="/Assets/SignOutButton.png"
@@ -47,14 +47,16 @@
                 <StackPanel Orientation="Horizontal">
                     <TextBox x:Name="FirstNameTextBox"
                              PlaceholderText="Your first name"
-                             Text="{x:Bind profileViewModel.FirstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Text="{x:Bind profileViewModel.UserProfile.FirstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             IsEnabled="{Binding ElementName=SignOutButton, Path=IsEnabled}"
                              FontSize="15"
                              Width="300"
                              Margin="0, 0, 50, 0"/>
 
                     <TextBox x:Name="LastNameTextBox"
                              PlaceholderText="Your Last name"
-                             Text="{x:Bind profileViewModel.LastName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Text="{x:Bind profileViewModel.UserProfile.LastName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             IsEnabled="{Binding ElementName=SignOutButton, Path=IsEnabled}"
                              FontSize="15"
                              Width="300"/>
                 </StackPanel>
@@ -64,14 +66,16 @@
 
                     <TextBox x:Name="EmailTextBox"
                              PlaceholderText="Your email address"
-                             Text="{x:Bind profileViewModel.Email, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Text="{x:Bind profileViewModel.UserProfile.Email, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             IsEnabled="{Binding ElementName=SignOutButton, Path=IsEnabled}"
                              FontSize="15"
                              Width="300"
                              Margin="0, 0, 50, 0"/>
 
                     <TextBox x:Name="UsernameTextBox"
                              PlaceholderText="Your username"
-                             Text="{x:Bind profileViewModel.Username, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Text="{x:Bind profileViewModel.UserProfile.Username, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             IsEnabled="{Binding ElementName=SignOutButton, Path=IsEnabled}"
                              FontSize="15"
                              Width="300"/>
                 </StackPanel>
@@ -82,13 +86,14 @@
                     <DatePicker x:Name="DateOfBirthPicker"
                                 FontSize="15"
                                 Width="300"
-                                SelectedDate="{x:Bind profileViewModel.DateOfBirth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                SelectedDate="{x:Bind profileViewModel.UserProfile.DateOfBirth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                IsEnabled="{Binding ElementName=SignOutButton, Path=IsEnabled}"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <Button x:Name="SaveChangesButton"
                             HorizontalAlignment="Center"
                             Margin="0, 70, 0, 0"
-                            Click="{x:Bind profileViewModel.SaveChangesButtonClick}">
+                            Command="{x:Bind profileViewModel.SaveChangesCommand}">
 
                         <StackPanel Orientation="Horizontal">
                             <Image Source="/Assets/SaveChangesButton.png"
@@ -104,7 +109,7 @@
                             HorizontalAlignment="Center"
                             Margin="20, 70, 0, 0"
                             Background="Red"
-                            Click="{x:Bind profileViewModel.DeleteAccountButtonClickAsync}">
+                            Command="{x:Bind profileViewModel.DeleteAccountCommand}">
 
                         <StackPanel Orientation="Horizontal">
                             <Image Source="/Assets/DeleteUserButton.png"

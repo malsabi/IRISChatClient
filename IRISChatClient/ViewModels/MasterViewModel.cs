@@ -1,25 +1,25 @@
-﻿using IRISChatClient.Enums;
-using IRISChatClient.Messages;
-using IRISChatClient.Models;
-using Microsoft.Toolkit.Mvvm.ComponentModel;
+﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Messaging;
+using IRISChatClient.Enums;
+using IRISChatClient.Models;
+using IRISChatClient.Configs;
+using IRISChatClient.Messages;
+using IRISChatClient.Interfaces;
 
 namespace IRISChatClient.ViewModels
 {
     public class MasterViewModel : ObservableRecipient
     {
-        #region "Fields"
-        private ScenariosModel scenarios;
-        #endregion
-
         #region "Properties"
-        public ScenariosModel Scenarios
-        {
-            get
-            {
-                return scenarios;
-            }
-        }
+        /// <summary>
+        /// Represents a <see cref="System.Collections.ObjectModel.ObservableCollection{T}"/> for storing the scenes.
+        /// </summary>
+        public ScenariosModel Scenarios { get; private set; }
+
+        /// <summary>
+        /// Used for handling the state of the client and notify other view models of the state.
+        /// </summary>
+        public IClientService Client { get; private set; }
         #endregion
 
         #region "Events / Handlers"
@@ -38,23 +38,56 @@ namespace IRISChatClient.ViewModels
         }
         #endregion
 
-        #region "Overrided Methods"
-        protected override void OnActivated()
+        #region "Initialization"
+        private void Initialize()
         {
-            Messenger.Register<MasterViewModel, NotificationMessage>(this, (r, m) => HandleNotification(m));
+            Scenarios = new ScenariosModel();
+            Client = App.GetService<IClientService>();
+            IsActive = true;
         }
         #endregion
 
-        #region "Private Methods"
-        private void Initialize()
+        #region "Messenger"
+        protected override void OnActivated()
         {
-            IsActive = true;
-            scenarios = new ScenariosModel();
-            scenarios.AddSignedOutItems();
+            RegisterEvents();
+            Messenger.Register<MasterViewModel, NotificationMessage>(this, (r, m) => { SetOnNotification(m.Message, m.Type); });
         }
-        private void HandleNotification(NotificationMessage Message)
+        protected override void OnDeactivated()
         {
-            SetOnNotification(Message.Message, Message.Type);
+            UnregisterEvents();
+            Messenger.Unregister<MasterViewModel>(this);
+        }
+        #endregion
+
+        #region "Client"
+        private void OnAttemptToReconnectHandler(object sender, System.EventArgs e)
+        {
+            SetOnNotification(Constants.ATTEMPT_TO_RECONNECT_MESSAGE, NotificationType.WarningMessage);
+        }
+
+        private void OnConnectedHadler(object sender, System.EventArgs e)
+        {
+            SetOnNotification(Constants.CONNECTED_MESSAGE, NotificationType.SuccessMessage);
+        }
+
+        private void OnStateChangedHandler(object sender, bool State)
+        {
+            Messenger.Send(new ClientStateMessage(State));
+        }
+
+        private void RegisterEvents()
+        {
+            Client.OnAttemptToReconnect += OnAttemptToReconnectHandler;
+            Client.OnConnected += OnConnectedHadler;
+            Client.OnStateChanged += OnStateChangedHandler;
+        }
+
+        private void UnregisterEvents()
+        {
+            Client.OnAttemptToReconnect -= OnAttemptToReconnectHandler;
+            Client.OnConnected -= OnConnectedHadler;
+            Client.OnStateChanged -= OnStateChangedHandler;
         }
         #endregion
     }

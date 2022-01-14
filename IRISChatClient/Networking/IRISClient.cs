@@ -1,7 +1,8 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Net;
 using System.Threading;
+using System.Diagnostics;
+using System.Collections.Generic;
 using Windows.Networking;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
@@ -12,6 +13,7 @@ using IRISChatClient.Interfaces;
 using IRISChatClient.Networking.Encryption;
 using IRISChatClient.Networking.MessageManagement;
 using IRISChatClient.Networking.Messages;
+using System.Threading.Tasks;
 
 namespace IRISChatClient.Networking
 {
@@ -26,6 +28,7 @@ namespace IRISChatClient.Networking
         private bool isDisconnected;
         private byte[] headerBuffer;
         private byte[] messageBuffer;
+        private List<Response> responseList;
         #endregion
 
         #region "Properties"
@@ -63,12 +66,24 @@ namespace IRISChatClient.Networking
             {
                 return attemptToReconnect;
             }
+            private set
+            {
+                attemptToReconnect = value;
+            }
         }
         public bool IsConnected
         {
             get
             {
                 return isConnected;
+            }
+            private set
+            {
+                isConnected = value;
+                if (value == true)
+                {
+                    SetOnClientStateChanged(true);
+                }
             }
         }
         public bool IsDisconnected
@@ -77,29 +92,51 @@ namespace IRISChatClient.Networking
             {
                 return isDisconnected;
             }
+            private set
+            {
+                isDisconnected = value;
+                if (value)
+                {
+                    SetOnClientStateChanged(false);
+                }
+            }
         }
         #endregion
 
         #region "Events / Handlers"
-        public delegate void OnClientConnectedEvent(IRISClient Client);
+        public delegate void OnClientStateChangedEvent(bool State);
+        public event OnClientStateChangedEvent OnClientStateChanged;
+        private void SetOnClientStateChanged(bool State)
+        {
+            OnClientStateChanged?.Invoke(State);
+        }
+
+        public delegate void OnClientAttemptToReconnectEvent();
+        public event OnClientAttemptToReconnectEvent OnClientAttemptToReconnect;
+        private void SetOnClientAttemptToReconnect()
+        {
+            OnClientAttemptToReconnect?.Invoke();
+        }
+
+        public delegate void OnClientConnectedEvent();
         public event OnClientConnectedEvent OnClientConnected;
         private void SetOnClientConnected()
         {
-            OnClientConnected?.Invoke(this);
+            OnClientConnected?.Invoke();
         }
 
-        public delegate void OnClientSendEvent(IRISClient Client, IMessage Message);
+        public delegate void OnClientSendEvent(IMessage Message);
         public event OnClientSendEvent OnClientSend;
         private void SetOnClientSend(IMessage Message)
         {
-            OnClientSend?.Invoke(this, Message);
+            OnClientSend?.Invoke(Message);
         }
 
-        public delegate void OnClientReceiveEvent(IRISClient Client, IMessage Message);
+        public delegate void OnClientReceiveEvent(IMessage Message);
         public event OnClientReceiveEvent OnClientReceive;
         private void SetOnClientReceive(IMessage Message)
         {
-            OnClientReceive?.Invoke(this, Message);
+            OnClientReceive?.Invoke(Message);
         }
 
         public delegate void OnClientDisconnectEvent();
@@ -109,11 +146,11 @@ namespace IRISChatClient.Networking
             OnClientDisconnect?.Invoke();
         }
 
-        public delegate void OnClientExceptionEvent(IRISClient Client, Exception ex);
+        public delegate void OnClientExceptionEvent(Exception ex);
         public event OnClientExceptionEvent OnClientException;
         private void SetOnClientException(Exception ex)
         {
-            OnClientException?.Invoke(this, ex);
+            OnClientException?.Invoke(ex);
         }
         #endregion
 
@@ -131,9 +168,10 @@ namespace IRISChatClient.Networking
         private void Initialize()
         {
             clientSocket = new StreamSocket();
-            isConnected = false;
-            isDisconnected = false;
+            IsConnected = false;
+            IsDisconnected = false;
             headerBuffer = new byte[Constants.HEADER_SIZE];
+            responseList = new List<Response>();
         }
 
         private async void ReceiveIncomingMessages()
@@ -168,7 +206,26 @@ namespace IRISChatClient.Networking
                 //If Message is not null then we will inform the listeners otherwise disconnect.
                 if (Message != null)
                 {
-                    SetOnClientReceive(Message);
+                    if (responseList.Count == 1)
+                    {
+                        Response CurrentResponse = responseList[0];
+                        if (CurrentResponse.ExpectedMessageType.Equals(Message.GetType()))
+                        {
+                            CurrentResponse.Result = Message;
+                            CurrentResponse.LastSeen = DateTime.Now;
+                        }
+                        else
+                        {
+                            CurrentResponse.IsTimedout = true;
+                        }
+                        CurrentResponse.Handler.Set();
+                        CurrentResponse.Handler.Dispose();
+                        responseList.RemoveAt(0);
+                    }
+                    else
+                    {
+                        SetOnClientReceive(Message);
+                    }
                 }
                 else
                 {
@@ -177,7 +234,7 @@ namespace IRISChatClient.Networking
                     Disconnect();
                 }
                 //Recursion call to read back again if its connected.
-                if (isConnected == true && isDisconnected == false)
+                if (IsConnected == true && IsDisconnected == false)
                 {
                     ReceiveIncomingMessages();
                 }
@@ -194,19 +251,22 @@ namespace IRISChatClient.Networking
             {
                 try
                 {
-                    Log(string.Format("Attempting to reconnect, IsConnected: {0}", isConnected));
-                    if (isConnected == false)
+                    Log(string.Format("Attempting to reconnect, IsConnected: {0}", IsConnected));
+                    
+                    if (IsConnected == false)
                     {
-                        if (isDisconnected == true)
+                        SetOnClientAttemptToReconnect();
+                        if (IsDisconnected)
                         {
                             clientSocket = new StreamSocket();
                         }
                         await clientSocket.ConnectAsync(new HostName(Host), port);
+                        IsConnected = true;
+                        IsDisconnected = false;
+                        new Thread(new ThreadStart(ReceiveIncomingMessages)).Start();
+                        new Thread(new ThreadStart(ResponseMonitor)).Start();
                         SetOnClientConnected();
-                        isConnected = true;
-                        isDisconnected = false;
-                        ThreadPool.QueueUserWorkItem(o => ReceiveIncomingMessages());
-                        Log(string.Format("Connected successfully, IsConnected: {0}", isConnected));
+                        Log(string.Format("Connected successfully, IsConnected: {0}", IsConnected));
                     }
                 }
                 catch (Exception ex)
@@ -217,6 +277,35 @@ namespace IRISChatClient.Networking
                 }
                 Thread.Sleep(Constants.RECONNECT_DELAY);
             }
+        }
+
+        private void ResponseMonitor()
+        {
+            Log(string.Format("Response Monitor started. IsConnected: {0}, IsDisconnected: {1}, ResponseCount: {2}", IsConnected, IsDisconnected, responseList.Count));
+            while (IsConnected && !IsDisconnected)
+            {
+                Log(string.Format("Response Monitor is running. IsConnected: {0}, IsDisconnected: {1}, ResponseCount: {2}", IsConnected, IsDisconnected, responseList.Count));
+                foreach (Response response in responseList.ToArray())
+                {
+                    if ((DateTime.Now - response.LastSeen).TotalSeconds >= Constants.RESPONSE_TIME_OUT)
+                    {
+                        Log(string.Format("Response Monitor detected timed out response. LastSeen: {0}, ExpectedMessageType: {1}, ResponseCount: {2}", response.LastSeen, response.ExpectedMessageType.Name, responseList.Count));
+                        response.IsTimedout = true;
+                        response.Handler.Set();
+                        response.Handler.Dispose();
+                        if (responseList.Remove(response) == false)
+                        {
+                            Log(string.Format("Response Monitor detected timed out response but failed to remove. LastSeen: {0}, ExpectedMessageType: {1}, ResponseCount: {2}", response.LastSeen, response.ExpectedMessageType.Name, responseList.Count));
+                        }
+                        else
+                        {
+                            Log(string.Format("Response Monitor detected timed out response but succeeded to remove. LastSeen: {0}, ExpectedMessageType: {1}, ResponseCount: {2}", response.LastSeen, response.ExpectedMessageType.Name, responseList.Count));
+                        }
+                    }
+                }
+                Thread.Sleep(Constants.RESPONSE_MONITOR_INTERVAL);
+            }
+            Log(string.Format("Response Monitor stopped. IsConnected: {0}, IsDisconnected: {1}, ResponseCount: {2}", IsConnected, IsDisconnected, responseList.Count));
         }
         #endregion
 
@@ -232,9 +321,11 @@ namespace IRISChatClient.Networking
                 else
                 {
                     await clientSocket.ConnectAsync(new HostName(Host), port);
+                    IsConnected = true;
+                    IsDisconnected = false;
+                    new Thread(new ThreadStart(ReceiveIncomingMessages)).Start();
+                    new Thread(new ThreadStart(ResponseMonitor)).Start();
                     SetOnClientConnected();
-                    isConnected = true;
-                    ThreadPool.QueueUserWorkItem(o => ReceiveIncomingMessages());
                 }
             }
             catch (Exception ex)
@@ -243,18 +334,26 @@ namespace IRISChatClient.Networking
             }
         }
 
-        public async void SendMessage(MessageWrapper Message)
+        public async void SendMessage(IMessage Message)
         {
             try
             {
-                DataWriter BufferWriter = new DataWriter(clientSocket.OutputStream);
-                byte[] Packet = AES256.Encrypt(JsonConvert.SerializeObject(Message));
-                byte[] MessageToSend = SocketHelper.AppendHeader(Packet);
-                BufferWriter.WriteBytes(MessageToSend);
-                await BufferWriter.StoreAsync();
-                BufferWriter.DetachStream();
-                BufferWriter.Dispose();
-                SetOnClientSend((IMessage)Message.Message);
+                if (IsConnected)
+                {
+                    MessageWrapper WrappedMessage = new MessageWrapper(Message.GetType().Name, Message);
+                    DataWriter BufferWriter = new DataWriter(clientSocket.OutputStream);
+                    byte[] Packet = AES256.Encrypt(JsonConvert.SerializeObject(WrappedMessage));
+                    byte[] MessageToSend = SocketHelper.AppendHeader(Packet);
+                    BufferWriter.WriteBytes(MessageToSend);
+                    await BufferWriter.StoreAsync();
+                    BufferWriter.DetachStream();
+                    BufferWriter.Dispose();
+                    SetOnClientSend(Message);
+                }
+                else
+                {
+                    throw new Exception("Cannot send a message, client is disconnected");
+                }
             }
             catch (Exception ex)
             {
@@ -263,14 +362,48 @@ namespace IRISChatClient.Networking
             }
         }
 
+        public Task<IResponse> SendMessage(IMessage Message, Type ExpectedMessageType)
+        {
+            Response response = new Response(DateTime.Now, ExpectedMessageType);
+            try
+            {
+                if (IsConnected)
+                {
+                    if (responseList.Count > 1)
+                    {
+                        throw new Exception("Cannot have more than one response in a time");
+                    }
+                    else
+                    {
+                        responseList.Add(response);
+                        SendMessage(Message);
+                        response.Handler.WaitOne();
+                    }
+                }
+                else
+                {
+                    response.IsTimedout = true;
+                    throw new Exception("Cannot send a message, client is disconnected");
+                }
+            }
+            catch (Exception ex)
+            {
+                response.IsTimedout = true;
+                SetOnClientException(ex);
+                Disconnect();
+            }
+            return Task.FromResult<IResponse>(response);
+        }
+
         public async void Disconnect()
         {
             try
             {
-                if (isConnected && isDisconnected == false)
+                if (IsConnected && IsDisconnected == false)
                 {
-                    isConnected = false;
-                    isDisconnected = true;
+                    IsConnected = false;
+                    IsDisconnected = true;
+                    responseList.Clear();
                     SetOnClientDisconnect();
                     await clientSocket.CancelIOAsync();
                     clientSocket.InputStream.Dispose();

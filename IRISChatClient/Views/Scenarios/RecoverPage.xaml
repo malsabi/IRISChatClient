@@ -2,7 +2,6 @@
     x:Class="IRISChatClient.Views.Scenarios.RecoverPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:IRISChatClient.Views.Scenarios"
     xmlns:viewModels="using:IRISChatClient.ViewModels"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -48,7 +47,7 @@
                     <Button x:Name="ReturnToLoginButton"
                             HorizontalAlignment="Center"
                             Margin="0, 0, 10, 0"
-                            Click="{x:Bind recoverViewModel.BackToLoginButtonClick}">
+                            Command="{x:Bind recoverViewModel.NavigateLoginCommand}">
 
                         <StackPanel Orientation="Horizontal">
                             <Image Source="/Assets/ReturnButton.png"
@@ -64,7 +63,7 @@
                     <Button x:Name="RegisterButton"
                             HorizontalAlignment="Center"
                             Margin="0, 0, 0, 0"
-                            Click="{x:Bind recoverViewModel.RecoverPasswordButtonClick}">
+                            Command="{x:Bind recoverViewModel.RecoverUserCommand}">
 
                         <StackPanel Orientation="Horizontal">
                             <Image Source="/Assets/RegisterButton.png"
